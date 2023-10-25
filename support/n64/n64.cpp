@@ -21,6 +21,7 @@ static constexpr uint64_t fnv_hash(const char *s, uint64_t h = FNV_OFFSET_BASIS)
 	return h;
 }
 
+
 enum class MemoryType {
 	NONE = 0,
 	EEPROM_512,
@@ -527,7 +528,15 @@ int n64_rom_tx(const char* name, unsigned char index) {
 	// Mount save state
 	char file_path[1024];
 	FileGenerateSavePath(name, file_path);
-	user_io_file_mount(file_path, 0, 1);
+	user_io_file_mount(file_path, 0, 1,512);
+	file_path[strlen(file_path)-1]='1';
+	user_io_file_mount(file_path, 1, 1,32768);
+	file_path[strlen(file_path)-1]='2';
+	user_io_file_mount(file_path, 2, 1,32768);
+	file_path[strlen(file_path)-1]='3';
+	user_io_file_mount(file_path, 3, 1,32768);
+	file_path[strlen(file_path)-1]='4';
+	user_io_file_mount(file_path, 4, 1,32768);
 
 	// Signal end of transmission
 	user_io_set_download(0);
@@ -540,3 +549,5 @@ int n64_rom_tx(const char* name, unsigned char index) {
 
 	return 1;
 }
+
+

@@ -3077,7 +3077,7 @@ void user_io_poll()
 				{
 					// ... and write it to disk
 					uint64_t size = sd_image[disk].size / blksz;
-					if (sz && lba <= size)
+					if (!is_n64() && sz && lba <= size)
 					{
 						diskled_on();
 						if (FileSeek(&sd_image[disk], lba * blksz, SEEK_SET))
@@ -3089,6 +3089,30 @@ void user_io_poll()
 							}
 
 							if (sz) FileWriteAdv(&sd_image[disk], buffer[disk], sz);
+						}
+					}
+					if (is_n64())
+					{
+						int filenum=0;
+						int totsize=0;
+						size = sd_image[disk+filenum].size / blksz;
+						while(sz && lba-totsize>size && filenum<5){
+							filenum++;
+							totsize+=size;
+							size = sd_image[disk+filenum].size / blksz;
+						}
+						if(sz && lba-totsize<=size){
+							diskled_on();
+							if (FileSeek(&sd_image[disk+filenum], (lba-totsize) * blksz, SEEK_SET))
+							{
+								if (!sd_image_cangrow[disk])
+								{
+									__off64_t rem = sd_image[disk+filenum].size - sd_image[disk+filenum].offset;
+									sz = (rem >= sz) ? sz : (int)rem;
+								}
+
+								if (sz) FileWriteAdv(&sd_image[disk], buffer[disk], sz);
+							}
 						}
 					}
 				}
@@ -3110,6 +3134,29 @@ void user_io_poll()
 						psx_read_cd(buffer[disk], lba, buf_n);
 						done = 1;
 						buffer_lba[disk] = lba;
+					}
+					else if (is_n64())
+					{						
+						int filenum=0;
+						int totsize=0;
+						uint64_t size = sd_image[disk+filenum].size / blksz;
+						while(sz && lba-totsize>size && filenum<5){
+							filenum++;
+							totsize+=size;
+							size = sd_image[disk+filenum].size / blksz;
+						}
+						if (sd_image[disk+filenum].size)
+						{
+							diskled_on();
+							if (FileSeek(&sd_image[disk+filenum], (lba-totsize) * blksz, SEEK_SET))
+							{
+								if (FileReadAdv(&sd_image[disk+filenum], buffer[disk], sizeof(buffer[disk])))
+								{
+									done = 1;
+									buffer_lba[disk] = lba;
+								}
+							}
+						}
 					}
 					else if (sd_image[disk].size)
 					{
